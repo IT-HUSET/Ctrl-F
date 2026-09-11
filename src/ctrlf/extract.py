@@ -32,15 +32,21 @@ OFFSHORE_HINTS = [
     r"platform", r"\brig\b", r"vessel", r"marine", r"windfarm", r"havvind",
     r"inter\s*array", r"cable\s*to\s*shore", r"jack\s*up", r"dockside",
 ]
+# "Use of Motor Driven Vehicles - Fleet of Vehicles" is the clause name these
+# policies actually use; the literal phrase "excess auto" appears nowhere in
+# the corpus.
 EXCESS_AUTO_HINTS = [
     r"excess\s*auto", r"auto\s*liability", r"automobile\s*liability",
-    r"motor\s*liability", r"attachment\s*point", r"underlying\s*(policy|limit|insurance)",
+    r"motor\s*liability", r"motor\s*driven\s*vehicles", r"fleet\s*of\s*vehicles",
+    r"attachment\s*point", r"underlying\s*(policy|limit|insurance)",
     r"excess\s*of\s*loss", r"\bumbrella\b",
 ]
+# No word boundary on "layer": OCR yields "Captivelayer" and "excesspolicy",
+# which \blayer\b silently fails to match. That cost a real document.
 LAYER_HINTS = [
-    r"\blayer\b", r"kerros", r"skikt", r"excess\s*of", r"in\s*excess\s*of",
-    r"attachment", r"excedent", r"primary\s*(layer|policy|insurer)", r"\bxs\b",
-    r"first\s*loss", r"underlying",
+    r"layer", r"kerros", r"skikt", r"excess\s*of", r"in\s*excess\s*of",
+    r"excess\s*policy", r"attachment", r"excedent",
+    r"primary\s*(layer|policy|insurer)", r"\bxs\b", r"first\s*loss", r"underlying",
 ]
 US_HINTS = [
     r"united\s*states", r"u\.?s\.?a\b", r"\busa\b", r"yhdysvallat",

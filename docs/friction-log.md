@@ -101,3 +101,32 @@ because the alternative is having no measure at all.
 
 *This is the finding we would most want to have had at 13:10 rather than 16:00. It came from
 reading one failing case by hand, which is the cheapest review technique we used all day.*
+
+## Final result, full corpus
+
+All 19 documents, 226 pages, OCR complete.
+
+| Question | Precision | Recall | Unexplained false positives |
+| --- | --- | --- | --- |
+| Offshore | 0.83 | 1.00 | 0 |
+| Excess auto, US | 1.00 | 0.50 | 0 |
+| Layer | 0.80 | 1.00 | 0 |
+
+There are no unexplained false positives anywhere. Both documents the score counts as wrong were
+read by hand and are correct: one carries "for off-shore GBP 5,000,000", the other "cover is MNZD10
+in excess of MNZD20". Both sit in the excess-auto folder, which is a search set for a different
+question, so the score penalises the system for being right.
+
+Layer recall went from 0.25 to 1.00 on one change: removing the word boundary from the pattern. OCR
+writes "Captivelayer" and "excesspolicy", so the boundary made a whole class of evidence invisible.
+The same root cause had already bitten us once on offshore, and we still did not generalise the fix
+the first time.
+
+The three remaining excess-auto misses were checked. Two are the Danfoss Liability Master, whose
+entire text contains the word "auto" once, in "Products Recall - auto parts", and no auto liability
+cover at all. The third is scoped to Europe. All three are correct rejections that the folder proxy
+counts as failures, which means true recall on that question is higher than 0.50 and we cannot say
+by how much without the customer confirming the answer key.
+
+We also learned the vocabulary matters more than the model: the phrase "excess auto" appears nowhere
+in the corpus. These policies say "Use of Motor Driven Vehicles - Fleet of Vehicles".

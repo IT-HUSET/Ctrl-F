@@ -10,7 +10,7 @@ One day, 09:00–18:00. Build phase 13:10–17:00, demo and review 17:00–18:00
 
 ### Six deliverables, all due 18:00
 
-1. PRD, one page, problem and requirements. Seeded by `docs/prd.md`.
+1. PRD, one page, problem and requirements. Written: `docs/prd.md`.
 2. Architecture and design decisions (ADR).
 3. Incremental build plan with test scenarios.
 4. `AGENTS.md` rules file, under 100 lines.
@@ -36,12 +36,12 @@ Demo aligns with the PRD. Increments built in parallel. Review found issues befo
 
 ## Current state
 
-This repository is at the pre-implementation stage. It contains no source code, build system, package manifest, or tests yet. The only substantive content is the product brief in `docs/prd.md`.
+This repository is at the pre-implementation stage. It contains no source code, build system, package manifest, or tests yet. The case brief is `docs/case.md`, the customer's three questions are in `docs/Use cases.docx`, and what the team committed to building today is `docs/prd.md`.
 
 - The `.gitignore` is GitHub's Jekyll/GitHub Pages template (`_site/`, `Gemfile.lock`, `/vendor`). It was picked at repo creation and is **not** a signal that the project uses Jekyll or Ruby. Replace it once a tech stack is chosen.
 - There are no build, lint, or test commands to run. Update this file with them as soon as the first scaffold lands.
 
-## What is being built (from `docs/prd.md`, written in Swedish)
+## What is being built (case in `docs/case.md`, written in Swedish)
 
 Ctrl-F is an AI-powered search and analysis solution for **IF Industri**, which holds roughly 200 million documents in many formats and structures. Existing metadata is insufficient, so the solution must understand and process the documents' actual content.
 
@@ -60,7 +60,7 @@ Keep these six requirements in mind when proposing architecture; source attribut
 
 Work descends through a hierarchy of artifacts. Each level must be settled before the next one begins, and no level may be skipped:
 
-1. **Product brief** — `docs/prd.md`. Why the project exists and what it must do.
+1. **Product brief** — `docs/case.md` (input) and `docs/prd.md` (what we committed to).
 2. **Plan** — decomposition into stories, with dependencies between them made explicit.
 3. **Spec** — per-story implementation detail: interfaces, data shapes, acceptance criteria.
 4. **Implementation** — code, written only against a spec that is already settled.
@@ -78,4 +78,5 @@ Before producing a plan, before producing a spec, and before implementing agains
 ## Working conventions
 
 - Product and planning documents live under `docs/`. The PRD is the source of truth for scope until a plan or spec supersedes it.
-- The PRD is in Swedish; code, identifiers, and technical docs should be in English unless the user says otherwise.
+- The case brief is Swedish. The source documents in `data/` are Finnish with English insurance
+  terminology. Code, identifiers, technical docs and commits are English unless told otherwise.

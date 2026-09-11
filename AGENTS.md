@@ -6,7 +6,8 @@ Rules for AI agents working in this repository, whatever the tool. Read "Non-neg
 
 Ctrl-F turns a large, heterogeneous document corpus into a usable knowledge source. Users ask
 questions in plain language and get answers with citations back to the source documents.
-Full brief: `docs/prd.md` (Swedish). Today's target is a working prototype, not a system.
+Case: `docs/case.md` (Swedish). Committed scope: `docs/prd.md`. Customer questions:
+`docs/Use cases.docx`. Today's target is a working prototype, not a system.
 
 ## Non-negotiables
 
@@ -23,7 +24,7 @@ Full brief: `docs/prd.md` (Swedish). Today's target is a working prototype, not 
 
 Artifacts descend in this order. Do not open a level until the one above it is agreed:
 
-`docs/prd.md` → ADR → build plan → code
+`docs/case.md` → `docs/prd.md` → ADR → build plan → code
 
 Before producing a plan, before producing a spec, and before implementing against one:
 

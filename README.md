@@ -9,7 +9,8 @@ IF Industri holds roughly 200 million documents across many formats, structures 
 knowledge is in there, but it is hard to find and harder to analyse. The metadata that exists is not
 sufficient, so any solution has to work from the documents' actual content.
 
-The case as handed to the team is in `docs/prd.md` (Swedish).
+The case as handed to the team is in `docs/case.md` (Swedish). What the team committed to building
+today is in `docs/prd.md`. The customer's own questions are in `docs/Use cases.docx`.
 
 ## What it should do
 
@@ -44,6 +45,8 @@ take a single command, documented in this section.
 | Path | Contents |
 | --- | --- |
 | `docs/` | Product and process documents, one page each |
-| `docs/prd.md` | The case brief as handed to the team |
+| `docs/prd.md` | What the team is building today, one page |
+| `docs/case.md` | The case brief as handed to the team |
+| `docs/Use cases.docx` | The customer's three questions and what a bad answer looks like |
 | `AGENTS.md` | Rules for AI agents working in this repository |
 | `CLAUDE.md` | Claude Code guidance: event terms, constraints, workflow |

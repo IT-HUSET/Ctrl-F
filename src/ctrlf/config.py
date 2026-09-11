@@ -13,7 +13,7 @@ IMAGES = CACHE / "pageimages"       # rendered page PNGs, used as citations
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 MODEL = os.environ.get("CTRLF_MODEL", "qwen2.5:7b-instruct")
-OCR_DPI = int(os.environ.get("CTRLF_OCR_DPI", "300"))
+OCR_DPI = int(os.environ.get("CTRLF_OCR_DPI", "200"))
 OCR_LANGS = os.environ.get("CTRLF_OCR_LANGS", "fin+eng")
 
 

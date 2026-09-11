@@ -15,8 +15,16 @@ Folder names are deliberately NOT recorded. They are ground truth for scoring
 """
 from __future__ import annotations
 
-import json
 import os
+
+# onnxruntime grabs every core per instance by default. With several worker
+# processes that means dozens of threads fighting over 16 logical cores, which
+# measured 14x SLOWER than the numbers below. Cap threads before it is imported.
+os.environ.setdefault("OMP_NUM_THREADS", "2")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
+os.environ.setdefault("MKL_NUM_THREADS", "2")
+
+import json
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -63,13 +71,21 @@ def do_page(task: tuple[str, str, int, int]) -> dict:
 
 
 def build_tasks() -> list[tuple[str, str, int, int]]:
-    tasks, seen = [], {}
+    """Page tasks, shortest documents first.
+
+    One document holds 85 of the 226 pages. Finishing the small ones first means
+    an interrupted run still covers most documents, instead of most of one.
+    """
+    docs, seen = [], {}
     for pdf in sorted(DATA.rglob("*.pdf")):
         stem = pdf.stem.replace(" ", "_")
         seen[stem] = seen.get(stem, 0) + 1
         doc_id = stem if seen[stem] == 1 else f"{stem}__{seen[stem]}"
-        n = pymupdf.open(pdf).page_count
-        tasks += [(doc_id, str(pdf), i, n) for i in range(n)]
+        docs.append((pymupdf.open(pdf).page_count, doc_id, str(pdf)))
+    docs.sort()
+    tasks = []
+    for n, doc_id, path in docs:
+        tasks += [(doc_id, path, i, n) for i in range(n)]
     return tasks
 
 

@@ -80,3 +80,24 @@ remembering the rule at the moment of committing. Today that rule failed once an
 twice, and the only thing that caught the second case was someone going back to check. A hook moves
 the guarantee from attention to enforcement, costs about ten lines, and would have prevented the
 one incident that actually reached a public remote.
+
+## Late finding: the folders are a search set, not an answer key
+
+We scored against folder membership, assuming a document in `excess auto liability` is a document
+that has excess auto cover. Checking a false negative by hand showed otherwise. The document is a
+Liability Master policy for Danfoss whose entire text contains the word "auto" once, in "Products
+Recall - auto parts", and the word "excess" once, in "excess of deductible". There is no auto
+liability cover in it.
+
+Re-reading the customer note explains it: they offered "supporting documents to search through,
+perhaps 15-20 documents per use case". The folder is the haystack for a question, not the set of
+needles. Documents that legitimately do not match are supposed to be in there, because finding
+nothing in them is part of the task.
+
+So precision and recall against folders are a proxy, and a weak one for questions two and three.
+The proxy holds better for offshore, where every document checked by hand in that folder does carry
+offshore wording. We report the numbers with that caveat attached rather than dropping them,
+because the alternative is having no measure at all.
+
+*This is the finding we would most want to have had at 13:10 rather than 16:00. It came from
+reading one failing case by hand, which is the cheapest review technique we used all day.*

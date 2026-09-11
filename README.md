@@ -31,8 +31,18 @@ deferred.
 
 ## Running it
 
-Not yet runnable. Once the first increment lands, starting the prototype from a clean clone will
-take a single command, documented in this section.
+```powershell
+.un.ps1
+```
+
+That installs dependencies, starts the local model server, OCRs the corpus, extracts one record per
+document, prints the score and opens the app. The first run takes a while because of the OCR pass;
+after that everything is cached under `cache/` and startup is immediate. Use `.un.ps1 -Rebuild`
+to redo it from scratch.
+
+Prerequisites are [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com) with the
+`qwen2.5:7b-instruct` model pulled. Put the source PDFs in `data/`. Nothing else is installed
+outside the Python environment, and nothing leaves the machine at run time.
 
 ## Constraints
 

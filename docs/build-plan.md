@@ -62,3 +62,15 @@ together, which is the third part of the customer's question three.
 
 One and two are sequential, because two consumes what one produces. Three and four both depend on
 two but not on each other, so they were built in parallel. Five depends on four.
+
+## Increment 6 — Free-text search (added during the build)
+
+Search every OCR-ed page for any phrase, and have the local model answer from the pages retrieved,
+citing them. Matching is done against both the page text and a de-spaced copy, because OCR runs
+words together. Question words are dropped from the query, since "what is the" otherwise outranks
+the terms that matter.
+
+**Test scenario.** Searching for the debris removal limit must return EUR 7 000 000 with a citation
+to page 1 of the 2023 property policy. That figure was verified by eye against the rendered page
+before any of this pipeline was written, so it is an independent check rather than a self-report.
+The model must decline rather than invent a figure when the retrieved pages do not contain one.

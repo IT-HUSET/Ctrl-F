@@ -29,6 +29,13 @@ Three questions, taken verbatim from the customer:
 3. **Layers.** Identify policies insuring a layer of a risk, find excess point and limit, and group
    policies insuring different layers of the same risk.
 
+Plus free-text search across every page, added late in the build:
+
+4. **Search.** Type any phrase and get the pages that contain it, with a short answer written by
+   the local model citing the pages it used. This is Ctrl-F in the literal sense, and it is the
+   capability the product is named after: these PDFs have no text layer, so before this pipeline
+   existed they could not be searched at all.
+
 Over the 19-document sample corpus in `data/`: 226 pages, of which 208 carry no text layer.
 
 ## What the user does
@@ -49,8 +56,10 @@ the answer came from with its page number. No row appears without that evidence.
 
 ## Out of scope today
 
-Scaling beyond the sample corpus. Authentication. Deployment. Formats other than PDF. Free-form
-questions outside the three above. Visual polish.
+Scaling beyond the sample corpus. Authentication. Deployment. Formats other than PDF. Visual polish.
+Semantic search: retrieval is lexical, so a query has to share wording with the document. Free-text
+search was moved into scope during the build and this section updated to match, rather than leaving
+the demo showing something the PRD called out of scope.
 
 ## Known risks
 

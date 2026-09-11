@@ -12,6 +12,7 @@ import streamlit as st
 
 from src.ctrlf.config import RECORDS, IMAGES, PAGES
 from src.ctrlf import eval as scoring
+from src.ctrlf import search as textsearch
 
 QUESTIONS = {
     "offshore": {
@@ -69,12 +70,57 @@ with st.sidebar:
         "outlines — so almost every page is recovered by OCR before anything else happens."
     )
 
+FREE = "__free__"
+LABELS = {k: v["title"] for k, v in QUESTIONS.items()}
+LABELS[FREE] = "Free text search"
+
 key = st.radio(
     "Question",
-    list(QUESTIONS),
-    format_func=lambda k: QUESTIONS[k]["title"],
+    list(QUESTIONS) + [FREE],
+    format_func=lambda k: LABELS[k],
     horizontal=True,
 )
+
+if key == FREE:
+    st.info(
+        "Search every page of every document. These PDFs have no text layer, so before "
+        "this pipeline ran you could not search them at all — not even with Ctrl-F."
+    )
+    query = st.text_input(
+        "Search the corpus",
+        placeholder="e.g. debris removal, offshore wind, excess of, deductible",
+    )
+    want_answer = st.checkbox(
+        "Also have the local model answer the question from the matching pages", value=True)
+    if query:
+        hits = textsearch.search(query, limit=25)
+        if want_answer and hits:
+            with st.spinner("Reading the matching pages..."):
+                st.markdown("#### Answer")
+                st.write(textsearch.answer(query, hits))
+                st.caption(
+                    "Written by the local model from the pages below, nothing else. "
+                    "Check the cited page before relying on it."
+                )
+                st.divider()
+        st.markdown(f"#### {len(hits)} matching pages")
+        for h in hits:
+            with st.expander(
+                f"{h['doc_id']} — page {h['page']}  ·  score {h['score']}"
+                f"  ·  matched: {', '.join(h['matched'][:4])}"
+            ):
+                st.markdown(f"> {h['snippet']}")
+                st.caption(
+                    f"Text recovered by {'OCR' if h['text_source'] == 'ocr' else 'the PDF text layer'}."
+                )
+                img = IMAGES / h["image"]
+                if img.exists():
+                    with st.popover(f"Show page {h['page']}"):
+                        st.image(str(img), use_container_width=True)
+        if not hits:
+            st.warning("Nothing matched. Try a shorter phrase — OCR sometimes runs words together.")
+    st.stop()
+
 q = QUESTIONS[key]
 st.info(f"**Customer's question:** {q['customer_wording']}")
 

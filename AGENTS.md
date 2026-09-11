@@ -55,8 +55,13 @@ deferred in writing rather than resolving it now.
 ## Conventions
 
 - Product and process documents live in `docs/`, one page each.
-- The product brief is Swedish. Code, identifiers, technical docs, and commits are English.
+- The case brief is Swedish; the documents are Swedish, Norwegian, Finnish and English, often
+  mixed within one page. Code, identifiers, technical docs and commits are English.
 - Prefer the shortest path to something demonstrable end to end over completeness or polish.
+- **Stage explicit paths, never `git add -A`.** `data/` and `cache/` hold real policy documents and
+  their extracted text. A blanket add put a customer-internal file on the public remote once.
+- **OCR runs words together.** Any pattern matched against document text must also be matched
+  against a de-spaced copy. Word boundaries have silently hidden real evidence twice.
 
 ## Out of scope today
 

@@ -36,10 +36,29 @@ Demo aligns with the PRD. Increments built in parallel. Review found issues befo
 
 ## Current state
 
-This repository is at the pre-implementation stage. It contains no source code, build system, package manifest, or tests yet. The case brief is `docs/case.md`, the customer's three questions are in `docs/Use cases.docx`, and what the team committed to building today is `docs/prd.md`.
+Working prototype. Python 3.12 managed by `uv`, Streamlit front end, local models through Ollama.
 
-- The `.gitignore` is GitHub's Jekyll/GitHub Pages template (`_site/`, `Gemfile.lock`, `/vendor`). It was picked at repo creation and is **not** a signal that the project uses Jekyll or Ruby. Replace it once a tech stack is chosen.
-- There are no build, lint, or test commands to run. Update this file with them as soon as the first scaffold lands.
+```powershell
+.un.ps1            # build anything missing, then open the app
+.un.ps1 -Rebuild   # redo OCR, extraction and the index from scratch
+uv run python -m src.ctrlf.ingest    # OCR the corpus -> cache/pages.jsonl
+uv run python -m src.ctrlf.extract   # one record per document -> cache/records.json
+uv run python -m src.ctrlf.embed     # semantic index -> cache/embeddings.json
+uv run python -m src.ctrlf.eval      # precision and recall per question
+```
+
+There is no test framework. `eval.py` is the test: it scores every question against the corpus
+labels and names the documents it got wrong. The build plan's test scenarios are run by hand.
+
+Pipeline: `ingest` renders and OCRs every page, `extract` builds one structured record per document
+with page-level evidence, `embed` builds the semantic index, `eval` scores, `app.py` presents.
+Everything derived lives in `cache/`, which is gitignored because it holds the source text.
+
+- `data/` and `cache/` are gitignored and must stay that way. They hold real If policy documents,
+  only partially redacted. A customer-internal file reached the public remote once today via
+  `git add -A`; stage explicit paths.
+- The `.gitignore` still carries GitHub's Jekyll template at the bottom. It is inert, not a signal
+  that this is a Jekyll project.
 
 ## What is being built (case in `docs/case.md`, written in Swedish)
 

@@ -130,3 +130,20 @@ by how much without the customer confirming the answer key.
 
 We also learned the vocabulary matters more than the model: the phrase "excess auto" appears nowhere
 in the corpus. These policies say "Use of Motor Driven Vehicles - Fleet of Vehicles".
+
+## Late additions: free-text and semantic search
+
+Both were requested after the PRD was agreed. Each time, the PRD was updated in the same change,
+because "demo aligns with PRD" is scored and a demo showing something the PRD calls out of scope
+loses points for a feature that should win them.
+
+**Question words broke free-text search, invisibly.** Searching "what is the debris removal limit"
+ranked pages full of "the" above the page holding the figure, and the model correctly answered that
+it could not find a limit. Dropping stopwords changed the answer to EUR 7 000 000 with a page
+citation, matching the figure verified by eye at 14:30. The lesson is that the model behaved
+honestly throughout; the retrieval was what lied.
+
+**We hedged the embedding model download rather than waiting on it.** The multilingual model is
+1.2 GB and the Tesseract experience earlier in the day had already shown what an unattended download
+can cost. We pulled the smaller English-centric model in parallel and made the code use whichever
+was installed. The larger one arrived, so the hedge cost 274 MB and bought certainty.

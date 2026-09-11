@@ -31,10 +31,12 @@ Three questions, taken verbatim from the customer:
 
 Plus free-text search across every page, added late in the build:
 
-4. **Search.** Type any phrase and get the pages that contain it, with a short answer written by
-   the local model citing the pages it used. This is Ctrl-F in the literal sense, and it is the
-   capability the product is named after: these PDFs have no text layer, so before this pipeline
-   existed they could not be searched at all.
+4. **Search.** Type any phrase and get the pages that match, with a short answer written by the
+   local model citing the pages it used. Matching runs three ways: keyword, semantic, or both.
+   This is Ctrl-F in the literal sense, and it is the capability the product is named after: these
+   PDFs have no text layer, so before this pipeline existed they could not be searched at all.
+   Semantic matching compares meaning rather than wording, so an English query reaches a Swedish,
+   Norwegian or Finnish passage that shares none of its words.
 
 Over the 19-document sample corpus in `data/`: 226 pages, of which 208 carry no text layer.
 
@@ -57,9 +59,10 @@ the answer came from with its page number. No row appears without that evidence.
 ## Out of scope today
 
 Scaling beyond the sample corpus. Authentication. Deployment. Formats other than PDF. Visual polish.
-Semantic search: retrieval is lexical, so a query has to share wording with the document. Free-text
-search was moved into scope during the build and this section updated to match, rather than leaving
-the demo showing something the PRD called out of scope.
+
+Free-text search and then semantic search were both moved into scope during the build, and this
+document was updated each time rather than leaving the demo showing something the PRD called out
+of scope.
 
 ## Known risks
 

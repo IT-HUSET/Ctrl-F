@@ -74,3 +74,17 @@ the terms that matter.
 to page 1 of the 2023 property policy. That figure was verified by eye against the rendered page
 before any of this pipeline was written, so it is an independent check rather than a self-report.
 The model must decline rather than invent a figure when the retrieved pages do not contain one.
+
+## Increment 7 — Semantic search (added during the build)
+
+Embed every page in overlapping chunks with a multilingual model, cache the vectors, and rank by
+cosine similarity at query time. The app offers keyword, semantic, or both; the combined mode merges
+the two rankings by reciprocal rank, since a term count and a cosine similarity are not comparable
+numbers.
+
+**Command:** `uv run python -m src.ctrlf.embed`
+
+**Test scenario.** Searching "cover for damage during building work" must return a Norwegian
+policy that shares none of those words, proving the match is on meaning rather than wording.
+Keyword mode on the same query must not return it. The index must build in under two minutes and
+be reused on subsequent runs rather than rebuilt.

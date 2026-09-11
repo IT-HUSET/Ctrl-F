@@ -13,6 +13,7 @@ import streamlit as st
 from src.ctrlf.config import RECORDS, IMAGES, PAGES
 from src.ctrlf import eval as scoring
 from src.ctrlf import search as textsearch
+from src.ctrlf import embed as embedding
 
 QUESTIONS = {
     "offshore": {
@@ -90,10 +91,47 @@ if key == FREE:
         "Search the corpus",
         placeholder="e.g. debris removal, offshore wind, excess of, deductible",
     )
-    want_answer = st.checkbox(
-        "Also have the local model answer the question from the matching pages", value=True)
+    sem_ready = embedding.available() and embedding.VECTORS.exists()
+    modes = ["Keyword", "Semantic", "Both"] if sem_ready else ["Keyword"]
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        mode = st.radio("Matching", modes, horizontal=True)
+    with c2:
+        want_answer = st.checkbox(
+            "Have the local model answer from the matching pages", value=True)
+    if sem_ready:
+        st.caption(
+            "Keyword finds wording the query shares with the page. Semantic compares meaning, so "
+            f"an English query can reach a Swedish or Finnish passage. Model: {embedding.model_name()}."
+        )
+    else:
+        st.caption(
+            "Keyword matching only. Semantic search needs an embedding model and a built index: "
+            "`ollama pull bge-m3` then `uv run python -m src.ctrlf.embed`."
+        )
+
     if query:
-        hits = textsearch.search(query, limit=25)
+        if mode == "Keyword":
+            hits = textsearch.search(query, limit=25)
+        elif mode == "Semantic":
+            hits = [dict(h, score=h["similarity"], matched=["semantic"],
+                         text_source="semantic") for h in embedding.semantic(query, limit=25)]
+        else:
+            lex = textsearch.search(query, limit=20)
+            sem = embedding.semantic(query, limit=20)
+            merged = {}
+            for rank, h in enumerate(lex):
+                merged[(h["doc_id"], h["page"])] = dict(h, score=round(1.0 / (60 + rank), 5))
+            for rank, h in enumerate(sem):
+                k = (h["doc_id"], h["page"])
+                add = 1.0 / (60 + rank)
+                if k in merged:
+                    merged[k]["score"] = round(merged[k]["score"] + add, 5)
+                    merged[k]["matched"] = sorted(set(merged[k]["matched"] + ["semantic"]))
+                else:
+                    merged[k] = dict(h, score=round(add, 5), matched=["semantic"],
+                                     text_source="semantic")
+            hits = sorted(merged.values(), key=lambda h: -h["score"])[:25]
         if want_answer and hits:
             with st.spinner("Reading the matching pages..."):
                 st.markdown("#### Answer")

@@ -12,37 +12,61 @@ sufficient, so any solution has to work from the documents' actual content.
 The case as handed to the team is in `docs/case.md` (Swedish). What the team committed to building
 today is in `docs/prd.md`. The customer's own questions are in `docs/Use cases.docx`.
 
-## What it should do
+## What it does today
 
-- Search document content in plain language.
-- Surface relationships and recurring patterns across documents.
-- Run analyses and aggregations over the corpus.
-- Handle mixed formats and structures.
-- Present results and their sources clearly and reliably.
-- Stay simple to use.
+- **Answers three portfolio questions** taken verbatim from the customer: which policies cover
+  offshore risk, which carry US excess auto cover and at what attachment point and limit, and which
+  insure a layer of a risk. Each answer is a list of policies with the evidence passage, its page
+  number, and the rendered page image behind it.
+- **Searches every page** by keyword, by meaning, or both. Semantic matching is multilingual, so an
+  English query reaches a Swedish, Norwegian or Finnish passage sharing none of its words. The local
+  model writes a short answer from the retrieved pages and cites them.
+- **Scores itself.** Precision and recall per question are shown next to the results, measured
+  against the customer's own document folders, which the pipeline never sees.
+
+The source PDFs have no text layer: their glyphs are flattened to vector outlines, so 208 of 226
+pages yield nothing to any PDF parser. Everything above rests on an OCR pass that makes them
+readable in the first place.
 
 ## Status
 
-Early prototype, built in a one-day Caseathon. No stack chosen yet and nothing runnable so far.
+Working prototype, built in a one-day Caseathon over a 19-document sample corpus.
 
-Today's scope is a demonstrable prototype over a small sample corpus, not the full
-200-million-document system. Scaling, authentication, deployment and visual polish are deliberately
-deferred.
+| Question | Precision | Recall |
+| --- | --- | --- |
+| Offshore | 0.83 | 1.00 |
+| Excess auto, US | 1.00 | 0.50 |
+| Layer | 0.80 | 1.00 |
+
+Both results the score counts as wrong were read by hand and are correct: they match a question
+they were not filed under, because the folders are a search set rather than an answer key. There
+are no unexplained false positives. Scaling, authentication, deployment and visual polish are
+deliberately deferred.
 
 ## Running it
 
 ```powershell
-.un.ps1
+.
+un.ps1
 ```
 
 That installs dependencies, starts the local model server, OCRs the corpus, extracts one record per
 document, prints the score and opens the app. The first run takes a while because of the OCR pass;
-after that everything is cached under `cache/` and startup is immediate. Use `.un.ps1 -Rebuild`
+after that everything is cached under `cache/` and startup is immediate. Use `.
+un.ps1 -Rebuild`
 to redo it from scratch.
 
-Prerequisites are [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com) with the
-`qwen2.5:7b-instruct` model pulled. Put the source PDFs in `data/`. Nothing else is installed
-outside the Python environment, and nothing leaves the machine at run time.
+Prerequisites are [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com) with two
+models pulled:
+
+```
+ollama pull qwen2.5:7b-instruct   # reading and answering
+ollama pull bge-m3                # multilingual embeddings for semantic search
+```
+
+Put the source PDFs in `data/`. Nothing else is installed outside the Python environment, and
+nothing leaves the machine at run time. OCR runs through RapidOCR, which ships its own models and
+needs no system binary.
 
 ## Constraints
 

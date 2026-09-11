@@ -28,6 +28,11 @@ if (-not (Test-Path cache/records.json)) {
     uv run python -m src.ctrlf.extract
 }
 
+if (-not (Test-Path cache/embeddings.json)) {
+    Write-Host "==> building the semantic index" -ForegroundColor Cyan
+    uv run python -m src.ctrlf.embed
+}
+
 Write-Host "==> scoring against the labelled set" -ForegroundColor Cyan
 uv run python -m src.ctrlf.eval
 

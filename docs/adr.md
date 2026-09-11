@@ -53,9 +53,24 @@ something interactive given the pipeline is already Python.
 document parallelism would have left that one file setting the wall-clock at roughly twenty
 minutes. Per page, the work spreads evenly across workers.
 
+**8. Semantic search uses a multilingual embedding model, indexed ahead of time.**
+Keyword search only finds wording a query shares with the page, which is a poor fit for a corpus
+written in Swedish, Norwegian, Finnish and English at once. We embed every page in overlapping
+chunks with `bge-m3`, chosen over the smaller `nomic-embed-text` because it is genuinely
+multilingual: an English query for building work retrieves a Norwegian policy that shares none of
+its words. 512 chunks index in 49 seconds and the result is cached, so query time is a dot product.
+We pulled the smaller model in parallel as a hedge against the larger download not arriving, and the
+code selects whichever is installed.
+
+**9. Keyword and semantic results are merged by reciprocal rank, not by score.**
+The two produce numbers that are not comparable: one counts term hits, the other is a cosine
+similarity. Combining them by rank rather than value avoids inventing a scale, and takes about ten
+lines. A page found by both rises to the top, which is the behaviour we want.
+
 ## Known weaknesses
 
 Figures for questions two and three are only as good as the OCR of a number, and a misread digit
 is a wrong answer by the customer's own definition. Scoring assumes folder membership equals
 truth, which is worth confirming before the number is quoted. Extraction quality rests on a 7B
-model reading OCR output, which is the main thing a larger model would improve.
+model reading OCR output, which is the main thing a larger model would improve. Semantic search is
+unscored: we have no labelled relevance judgements, so it is demonstrated rather than measured.

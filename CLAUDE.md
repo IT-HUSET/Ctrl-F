@@ -24,6 +24,25 @@ Required capabilities:
 
 Keep these six requirements in mind when proposing architecture; source attribution and format heterogeneity are first-class constraints, not afterthoughts.
 
+## Spec-driven workflow
+
+Work descends through a hierarchy of artifacts. Each level must be settled before the next one begins, and no level may be skipped:
+
+1. **Product brief** — `docs/prd.md`. Why the project exists and what it must do.
+2. **Plan** — decomposition into stories, with dependencies between them made explicit.
+3. **Spec** — per-story implementation detail: interfaces, data shapes, acceptance criteria.
+4. **Implementation** — code, written only against a spec that is already settled.
+
+### Interview before descending a level
+
+Before producing a plan, before producing a spec, and before implementing against one:
+
+- Interview me relentlessly about every aspect of this plan until we reach a shared understanding.
+- Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
+- For each question, provide your recommended answer.
+- Ask the questions one at a time.
+- If a question can be answered by exploring the codebase, explore the codebase instead.
+
 ## Working conventions
 
 - Product and planning documents live under `docs/`. The PRD is the source of truth for scope until a plan or spec supersedes it.

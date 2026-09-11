@@ -3,6 +3,7 @@
 data/
 # Derived artefacts from those documents (OCR text, indexes, embeddings) carry
 # the same content and are ignored for the same reason.
+cache/
 .cache/
 index/
 *.ocr.txt

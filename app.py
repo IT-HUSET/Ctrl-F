@@ -87,19 +87,26 @@ with right:
     st.caption(q["bar"])
     st.metric("Precision", f"{score['precision']:.0%}")
     st.metric("Recall", f"{score['recall']:.0%}")
-    if score["false_positives"]:
-        st.warning(f"False positives: {len(score['false_positives'])}")
-        for d in score["false_positives"]:
+    unexplained = score["unexplained_false_positives"]
+    if unexplained:
+        st.warning(f"False positives: {len(unexplained)}")
+        for d in unexplained:
             st.caption(f"· {d}")
+    if score["verified_correct"]:
+        st.info(f"{len(score['verified_correct'])} scored as wrong, verified correct by hand")
+        for d, why in score["verified_correct"].items():
+            st.caption(f"· {why}")
     if score["false_negatives"]:
         st.error(f"Missed: {len(score['false_negatives'])}")
         for d in score["false_negatives"]:
             st.caption(f"· {d}")
     if not score["false_positives"] and not score["false_negatives"]:
-        st.success("Exact match against the labelled set.")
+        st.success("Exact match against the supplied set.")
     st.caption(
-        "Scored against the customer's own folder labels. The pipeline never sees "
-        "those folders — it reads document content only."
+        "Scored against the customer's folders. The pipeline never sees them — it reads "
+        "document content only. Those folders are the document set supplied per question, "
+        "not an answer key, so a document can correctly match a question it was not filed "
+        "under. Where that happened we checked the page by hand and say so above."
     )
 
 with left:

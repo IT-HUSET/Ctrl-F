@@ -2,14 +2,37 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Overriding constraint: functional prototype today
+## Overriding constraint: Caseathon prototype, due today
 
-Time is very limited. The immediate goal is a working prototype today, not a complete system. This constraint outranks the workflow below wherever the two pull in different directions.
+Event guidelines: https://orange-beach-0e1493b03.7.azurestaticapps.net/caseathon.html
 
-- Prefer the shortest path to something demonstrable end to end over completeness, polish, or scale. The 200-million-document target is the eventual goal, not today's; prototype against a small sample corpus.
-- Run the spec-driven hierarchy compressed: a thin plan and a thin spec agreed in conversation, not as separate documents.
-- Keep the interview inside the day's budget. Ask the questions whose answers change what gets built today, and record the rest as deferred instead of resolving them now.
-- Write down shortcuts and deferred decisions as you make them, so they can be revisited after the prototype.
+One day, 09:00–18:00. Build phase 13:10–17:00, demo and review 17:00–18:00. Four-person team, two Definers and two Builders. This section outranks the workflow below wherever the two pull in different directions.
+
+### Six deliverables, all due 18:00
+
+1. PRD, one page, problem and requirements. Seeded by `docs/prd.md`.
+2. Architecture and design decisions (ADR).
+3. Incremental build plan with test scenarios.
+4. `AGENTS.md` rules file, under 100 lines.
+5. Working prototype, runnable with **one command**.
+6. Friction log and review findings.
+
+### Hard constraints
+
+- **Local data only, no external APIs.** Treat this as binding on the prototype at runtime and plan for a local index over a sample corpus.
+- Start a **new AI session for each increment**.
+- Read off what the day cost once, at the demo.
+
+### Scored 0–3 on each
+
+Demo aligns with the PRD. Increments built in parallel. Review found issues before the demo. One automation identified for the next iteration.
+
+### Working implications
+
+- Prefer the shortest path to something demonstrable end to end over completeness, polish, or scale. The 200-million-document target is the eventual goal, not today's.
+- The PRD, ADR, and build plan are graded artifacts, so they are written files under `docs/`, one page each. Do not collapse them into conversation.
+- Keep the interview inside the build window. Ask the questions whose answers change what gets built today, and record the rest as deferred.
+- Log friction and shortcuts as they happen. Deliverable 6 and the automation score both depend on having kept that record.
 
 ## Current state
 

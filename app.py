@@ -108,8 +108,13 @@ with left:
         st.write("No policies matched.")
     for r in matches:
         f = r["findings"][key]
-        insured = r.get("insured") or "(insured not read)"
-        header = f"**{insured}** — policy {r.get('policy_no') or '?'} · {r.get('period') or '?'}"
+        # These documents are partially redacted: the policyholder name is behind a
+        # black box, so the model often returns a customer number. Lead with the
+        # policy number, which is reliably present.
+        pol = r.get("policy_no") or r["doc_id"]
+        insured = r.get("insured") or ""
+        period = r.get("period") or "period not read"
+        header = f"**Policy {pol}** · {period}" + (f" · {insured}" if insured else "")
         with st.expander(header, expanded=len(matches) <= 3):
             cols = [c for c in q["columns"] if f.get(c)]
             if cols:
@@ -128,11 +133,23 @@ with left:
     if key == "layer" and matches:
         st.divider()
         st.subheader("Layers grouped by insured")
+        st.caption(
+            "Grouping is by insured party. These documents are partially redacted, so the "
+            "policyholder name is frequently unavailable and grouping falls back to the "
+            "customer number the document does carry. This is a known weakness, not a result."
+        )
         groups: dict[str, list] = {}
         for r in matches:
-            groups.setdefault(r.get("insured") or "(unknown)", []).append(r)
+            groups.setdefault(r.get("insured") or "(insured redacted)", []).append(r)
         for insured, rs in groups.items():
             if len(rs) > 1:
                 st.write(f"**{insured}** — {len(rs)} policies covering different layers")
+                for r in rs:
+                    f = r["findings"]["layer"]
+                    st.caption(
+                        f"   · policy {r.get('policy_no') or r['doc_id']}"
+                        f" — excess {f.get('attachment_point') or '?'}"
+                        f", limit {f.get('limit') or '?'} {f.get('currency') or ''}"
+                    )
             else:
                 st.write(f"{insured} — single layer policy")

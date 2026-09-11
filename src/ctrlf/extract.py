@@ -1,9 +1,18 @@
 """Build one structured record per document, with page-level evidence.
 
-Strategy: a cheap multilingual keyword sweep proposes candidate pages, then the
-local model verifies each candidate and pulls out figures. Verification is what
-kills false positives, which the customer names as a failure mode for every
-question. Documents are never judged by the folder they live in.
+Two properties of this corpus shape the design.
+
+OCR frequently runs words together, so every pattern is matched against both the
+raw text and a de-spaced copy, and patterns avoid word boundaries where the term
+is distinctive on its own.
+
+The documents mix Swedish, Finnish and English, often on one page, so hints are
+multilingual and tuned for recall. The local model then reads the matched
+snippets and confirms or rejects, which is what controls false positives. One
+model call per document per question, not per page: the per-page version measured
+112s for a four-page document, which does not fit the day.
+
+Folder names are never read here. They are ground truth for scoring only.
 """
 from __future__ import annotations
 
@@ -11,40 +20,60 @@ import collections
 import json
 import re
 import sys
+import time
 
 from .config import PAGES, RECORDS
 from . import llm
 
-# Multilingual hints. Recall first: the model prunes false positives afterwards.
 OFFSHORE_HINTS = [
-    r"off\s*-?\s*shore", r"\boffshore\b", r"merell[aä]", r"merialue", r"avomeri",
-    r"till\s+sj[oö]ss", r"til\s+havs", r"havsbaserad", r"\bsubsea\b", r"\bplatform\b",
-    r"\brig\b", r"\bvessel\b", r"\bmarine\b", r"\bwindfarm\b", r"havvind",
+    r"off\s*-?\s*shore", r"subsea", r"below\s*sea\s*level", r"sea\s*level",
+    r"wreck", r"sue\s*and\s*labour", r"merell[ai]", r"merialue", r"avomeri",
+    r"till\s*sj[o0]ss", r"til\s*havs", r"havsbaserad", r"havsvind", r"sj[o0]fart",
+    r"platform", r"\brig\b", r"vessel", r"marine", r"windfarm", r"havvind",
+    r"inter\s*array", r"cable\s*to\s*shore", r"jack\s*up", r"dockside",
 ]
 EXCESS_AUTO_HINTS = [
-    r"excess\s+auto", r"auto\s+liability", r"automobile\s+liability",
-    r"excess\s+of\s+loss", r"attachment\s+point", r"\bunderlying\b",
+    r"excess\s*auto", r"auto\s*liability", r"automobile\s*liability",
+    r"motor\s*liability", r"attachment\s*point", r"underlying\s*(policy|limit|insurance)",
+    r"excess\s*of\s*loss", r"\bumbrella\b",
 ]
 LAYER_HINTS = [
-    r"\blayer\b", r"\bkerros\b", r"\bskikt\b", r"excess\s+of", r"\bprimary\b",
-    r"\bxs\b", r"in\s+excess\s+of", r"attachment", r"\bexcedent\b",
+    r"\blayer\b", r"kerros", r"skikt", r"excess\s*of", r"in\s*excess\s*of",
+    r"attachment", r"excedent", r"primary\s*(layer|policy|insurer)", r"\bxs\b",
+    r"first\s*loss", r"underlying",
 ]
-US_HINTS = [r"united\s+states", r"\bU\.?S\.?A?\b", r"yhdysvallat", r"\bUSA\b"]
+US_HINTS = [
+    r"united\s*states", r"u\.?s\.?a\b", r"\busa\b", r"yhdysvallat",
+    r"f[o0]renta\s*staterna", r"north\s*america",
+]
+
+HINTS = {"offshore": OFFSHORE_HINTS, "excess_auto_us": EXCESS_AUTO_HINTS, "layer": LAYER_HINTS}
 
 
-def _hits(text: str, patterns: list[str]) -> list[str]:
-    out = []
-    for p in patterns:
-        for m in re.finditer(p, text, re.IGNORECASE):
-            s = max(0, m.start() - 90)
-            out.append(text[s:m.end() + 90].replace("\n", " ").strip())
-    return out[:4]
+def _norm(text):
+    """OCR drops spaces; searching a de-spaced copy recovers those matches."""
+    return re.sub(r"\s+", "", text)
+
+
+def snippets(text, patterns, width=130):
+    out, seen = [], set()
+    for haystack in (text, _norm(text)):
+        for p in patterns:
+            for m in re.finditer(p, haystack, re.IGNORECASE):
+                s = max(0, m.start() - width)
+                frag = haystack[s:m.end() + width].replace("\n", " ").strip()
+                k = frag[:60].lower()
+                if k not in seen:
+                    seen.add(k)
+                    out.append(frag)
+    return out[:6]
 
 
 VERIFY_SCHEMA = {
     "type": "object",
     "properties": {
         "applies": {"type": "boolean"},
+        "page": {"type": "integer"},
         "quote": {"type": "string"},
         "attachment_point": {"type": "string"},
         "limit": {"type": "string"},
@@ -53,44 +82,42 @@ VERIFY_SCHEMA = {
     },
     "required": ["applies", "quote", "reason"],
 }
-
 HEADER_SCHEMA = {
     "type": "object",
     "properties": {
         "insured": {"type": "string"},
         "policy_no": {"type": "string"},
         "period": {"type": "string"},
-        "document_type": {"type": "string"},
     },
     "required": ["insured", "policy_no", "period"],
 }
 
 QUESTIONS = {
     "offshore": (
-        "Does this page show that the insured risk or the cover is OFFSHORE — located at sea, "
-        "on a vessel, rig, platform, subsea, or an offshore wind or marine project? "
-        "A generic mention of transport, cargo or a company name is NOT offshore. "
-        "Answer applies=false unless the page genuinely indicates offshore risk."
+        "Do these excerpts show that the policy covers OFFSHORE risk: anything at sea, below sea "
+        "level, on a vessel, rig or platform, subsea or inter-array cabling, marine wreck removal, "
+        "or an offshore wind project? A cover item whose own name begins with the word Offshore "
+        "counts. Marine and sea-related wording counts even inside a transport or cargo policy. "
+        "Answer applies=true if any excerpt shows offshore exposure."
     ),
     "excess_auto_us": (
-        "Does this page show EXCESS AUTO or automobile liability cover applying in the "
-        "UNITED STATES? If so, give the attachment point (the excess point where this cover "
-        "starts) and the limit, with currency. Answer applies=false if either the excess auto "
-        "nature or the US scope is absent."
+        "Do these excerpts show EXCESS AUTO or automobile or motor liability cover, sitting excess "
+        "of an underlying policy, applying in the UNITED STATES? If so give the attachment point, "
+        "meaning where this cover starts, and the limit, with currency. Answer applies=false if the "
+        "cover is not auto liability, or is not excess, or has no US scope."
     ),
     "layer": (
-        "Does this page show that this policy insures a LAYER of a risk — cover sitting "
-        "excess of an underlying amount rather than from the ground up? If so give the excess "
-        "point (attachment) and the limit of this layer, with currency. "
-        "A plain sublimit inside a primary policy is NOT a layer."
+        "Do these excerpts show that this policy insures a LAYER of a risk: cover sitting excess of "
+        "an underlying amount rather than from the ground up? If so give the excess or attachment "
+        "point and the limit of this layer, with currency. A sublimit inside a primary policy is "
+        "NOT a layer."
     ),
 }
-HINTS = {"offshore": OFFSHORE_HINTS, "excess_auto_us": EXCESS_AUTO_HINTS, "layer": LAYER_HINTS}
 
 SYSTEM = (
-    "You read insurance policy documents written in Finnish and English. The text comes from "
-    "OCR and may contain errors. Answer only from the text you are given. Quote verbatim from "
-    "the page as evidence. If the page does not support the claim, say applies=false."
+    "You read insurance policy documents in Swedish, Finnish and English. The text comes from OCR: "
+    "words are often run together and characters are sometimes wrong. Read past those errors. "
+    "Answer only from the excerpts given, and quote one verbatim as evidence."
 )
 
 
@@ -103,55 +130,65 @@ def load_pages():
     return docs
 
 
-def extract_doc(doc_id: str, pages: list[dict]) -> dict:
+def extract_doc(doc_id, pages):
     pages = sorted(pages, key=lambda p: p["page"])
-    head_text = "\n".join(p["text"] for p in pages[:2])[:6000]
+    by_page = {p["page"]: p for p in pages}
+
+    head = "\n".join(p["text"] for p in pages[:2])[:3500]
     try:
-        header = llm.ask_json(
-            f"Insurance policy document, first pages:\n\n{head_text}\n\n"
-            "Extract the insured party, the policy number and the insurance period.",
+        h = llm.ask_json(
+            "First pages of an insurance policy:\n\n" + head + "\n\n"
+            "Extract the insured party, meaning the policyholder company name and not a policy "
+            "number, plus the policy number and the insurance period.",
             HEADER_SCHEMA, system=SYSTEM)
     except Exception as e:
-        header = {"insured": "", "policy_no": "", "period": "", "error": str(e)[:120]}
+        h = {"insured": "", "policy_no": "", "period": "", "error": str(e)[:100]}
 
     rec = {
         "doc_id": doc_id,
         "n_pages": pages[0]["n_pages"],
-        "insured": header.get("insured", ""),
-        "policy_no": header.get("policy_no", ""),
-        "period": header.get("period", ""),
+        "insured": h.get("insured", ""),
+        "policy_no": h.get("policy_no", ""),
+        "period": h.get("period", ""),
         "ocr_pages": sum(1 for p in pages if p["text_source"] == "ocr"),
         "empty_pages": sum(1 for p in pages if not p["text"].strip()),
         "findings": {},
     }
 
-    us_doc = any(_hits(p["text"], US_HINTS) for p in pages)
+    us_doc = any(snippets(p["text"], US_HINTS) for p in pages)
+
     for key, question in QUESTIONS.items():
-        finding = {"applies": False, "evidence": [], "attachment_point": "", "limit": "",
-                   "currency": "", "candidate_pages": []}
+        found = []
         for p in pages:
-            snippets = _hits(p["text"], HINTS[key])
-            if not snippets:
-                continue
-            finding["candidate_pages"].append(p["page"])
+            for s in snippets(p["text"], HINTS[key]):
+                found.append((p["page"], s))
+        finding = {
+            "applies": False, "evidence": [], "attachment_point": "", "limit": "",
+            "currency": "", "candidate_pages": sorted({pg for pg, _ in found}),
+        }
+        if found:
+            block = "\n".join("[page %d] %s" % (pg, s) for pg, s in found[:14])[:6000]
             try:
                 v = llm.ask_json(
-                    f"{question}\n\nPage {p['page']} of the document:\n\n{p['text'][:5000]}",
+                    question + "\n\nExcerpts from one policy document:\n\n" + block,
                     VERIFY_SCHEMA, system=SYSTEM)
             except Exception:
-                continue
-            if not v.get("applies"):
-                continue
-            if key == "excess_auto_us" and not us_doc:
-                continue  # US scope must appear somewhere in the document
-            finding["applies"] = True
-            finding["evidence"].append({
-                "page": p["page"], "quote": (v.get("quote") or "")[:400],
-                "reason": (v.get("reason") or "")[:300], "image": p["image"],
-            })
-            for f in ("attachment_point", "limit", "currency"):
-                if v.get(f) and not finding[f]:
-                    finding[f] = v[f]
+                v = {}
+            blocked = (key == "excess_auto_us" and not us_doc)
+            if v.get("applies") and not blocked:
+                page = v.get("page") or found[0][0]
+                if page not in by_page:
+                    page = found[0][0]
+                finding["applies"] = True
+                finding["attachment_point"] = v.get("attachment_point", "")
+                finding["limit"] = v.get("limit", "")
+                finding["currency"] = v.get("currency", "")
+                finding["evidence"] = [{
+                    "page": page,
+                    "quote": (v.get("quote") or found[0][1])[:400],
+                    "reason": (v.get("reason") or "")[:300],
+                    "image": by_page[page]["image"],
+                }]
         rec["findings"][key] = finding
     return rec
 
@@ -160,12 +197,32 @@ def main():
     if not llm.available():
         sys.exit("Local model not reachable. Start it with: ollama serve")
     docs = load_pages()
+    complete = {d: ps for d, ps in docs.items() if len(ps) == ps[0]["n_pages"]}
+    skipped = sorted(set(docs) - set(complete))
+    if skipped:
+        print("skipping %d incomplete document(s): %s" % (len(skipped), skipped))
+
+    # Resume: OCR and extraction run concurrently (OCR on CPU, model on GPU),
+    # so this is re-run as documents finish. Already-extracted docs are kept.
     out = []
-    for i, (doc_id, pages) in enumerate(docs.items(), 1):
-        print(f"[{i}/{len(docs)}] {doc_id} ({len(pages)} pages)", flush=True)
+    if RECORDS.exists():
+        try:
+            out = json.loads(RECORDS.read_text(encoding="utf-8"))
+        except Exception:
+            out = []
+    have = {r["doc_id"] for r in out}
+    todo = {d: ps for d, ps in complete.items() if d not in have}
+    if have:
+        print("resuming: %d already extracted, %d to do" % (len(have), len(todo)))
+
+    t0 = time.time()
+    for i, (doc_id, pages) in enumerate(todo.items(), 1):
+        t = time.time()
         out.append(extract_doc(doc_id, pages))
-    RECORDS.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"\n{len(out)} records -> {RECORDS}")
+        print("[%d/%d] %s (%dp) %.0fs" % (i, len(todo), doc_id, len(pages), time.time() - t),
+              flush=True)
+        RECORDS.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("\n%d records -> %s in %.0fs" % (len(out), RECORDS, time.time() - t0))
 
 
 if __name__ == "__main__":

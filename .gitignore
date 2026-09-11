@@ -1,3 +1,12 @@
+# Source documents. These are real If P&C policy documents, only partially
+# redacted, naming real insured companies. They must never reach the remote.
+data/
+# Derived artefacts from those documents (OCR text, indexes, embeddings) carry
+# the same content and are ignored for the same reason.
+.cache/
+index/
+*.ocr.txt
+
 # This .gitignore is appropriate for repositories deployed to GitHub Pages and using
 # a Gemfile as specified at https://github.com/github/pages-gem#conventional
 

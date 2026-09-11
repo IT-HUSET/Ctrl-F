@@ -39,8 +39,8 @@ Demo aligns with the PRD. Increments built in parallel. Review found issues befo
 Working prototype. Python 3.12 managed by `uv`, Streamlit front end, local models through Ollama.
 
 ```powershell
-.un.ps1            # build anything missing, then open the app
-.un.ps1 -Rebuild   # redo OCR, extraction and the index from scratch
+.\run.ps1            # build anything missing, then open the app
+.\run.ps1 -Rebuild   # redo OCR, extraction and the index from scratch
 uv run python -m src.ctrlf.ingest    # OCR the corpus -> cache/pages.jsonl
 uv run python -m src.ctrlf.extract   # one record per document -> cache/records.json
 uv run python -m src.ctrlf.embed     # semantic index -> cache/embeddings.json
@@ -59,6 +59,9 @@ Everything derived lives in `cache/`, which is gitignored because it holds the s
   `git add -A`; stage explicit paths.
 - The `.gitignore` still carries GitHub's Jekyll template at the bottom. It is inert, not a signal
   that this is a Jekyll project.
+- The visual theme is `src/ctrlf/theme.py` plus `.streamlit/config.toml`. Fonts are embedded from
+  `assets/fonts/` as data URIs, because Streamlit's static file route answered font URLs with the
+  app's HTML page. Never link fonts or assets from a CDN.
 
 ## What is being built (case in `docs/case.md`, written in Swedish)
 

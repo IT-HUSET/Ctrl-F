@@ -1,0 +1,30 @@
+# Norwegian black metal, kept legible. The CSS layer, including the embedded
+# fonts, lives in src/ctrlf/theme.py.
+
+[browser]
+# Streamlit collects usage statistics by default, which is a network call.
+# The prototype promises that nothing leaves the machine at run time.
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "dark"
+primaryColor = "#e6e1d7"
+backgroundColor = "#050505"
+secondaryBackgroundColor = "#111111"
+textColor = "#d8d3c9"
+linkColor = "#9fb4c7"
+borderColor = "#262626"
+showWidgetBorder = true
+baseRadius = "none"
+font = "sans-serif"
+# PirataOne is defined by an embedded @font-face in src/ctrlf/theme.py.
+headingFont = "PirataOne, serif"
+headingFontWeights = 400
+codeFont = "'Courier New', monospace"
+
+[theme.sidebar]
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#0c0c0c"

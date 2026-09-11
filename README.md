@@ -40,20 +40,18 @@ Working prototype, built in a one-day Caseathon over a 19-document sample corpus
 
 Both results the score counts as wrong were read by hand and are correct: they match a question
 they were not filed under, because the folders are a search set rather than an answer key. There
-are no unexplained false positives. Scaling, authentication, deployment and visual polish are
-deliberately deferred.
+are no unexplained false positives. Scaling, authentication and deployment are deliberately
+deferred.
 
 ## Running it
 
 ```powershell
-.
-un.ps1
+.\run.ps1
 ```
 
 That installs dependencies, starts the local model server, OCRs the corpus, extracts one record per
 document, prints the score and opens the app. The first run takes a while because of the OCR pass;
-after that everything is cached under `cache/` and startup is immediate. Use `.
-un.ps1 -Rebuild`
+after that everything is cached under `cache/` and startup is immediate. Use `.\run.ps1 -Rebuild`
 to redo it from scratch.
 
 Prerequisites are [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com) with two
@@ -84,3 +82,5 @@ needs no system binary.
 | `docs/Use cases.docx` | The customer's three questions and what a bad answer looks like |
 | `AGENTS.md` | Rules for AI agents working in this repository |
 | `CLAUDE.md` | Claude Code guidance: event terms, constraints, workflow |
+| `.streamlit/config.toml` | Theme, and the switch that keeps Streamlit's usage statistics off |
+| `assets/fonts/` | Bundled OFL blackletter fonts, embedded into the page rather than fetched |

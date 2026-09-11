@@ -14,6 +14,7 @@ from src.ctrlf.config import RECORDS, IMAGES, PAGES
 from src.ctrlf import eval as scoring
 from src.ctrlf import search as textsearch
 from src.ctrlf import embed as embedding
+from src.ctrlf import theme
 
 QUESTIONS = {
     "offshore": {
@@ -42,7 +43,8 @@ QUESTIONS = {
     },
 }
 
-st.set_page_config(page_title="Ctrl-F", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Ctrl-F", page_icon="🌲", layout="wide")
+theme.apply()
 
 
 @st.cache_data
@@ -53,8 +55,7 @@ def load():
 
 
 records = load()
-st.title("Ctrl-F")
-st.caption("Questions over If Industrial policy documents. Every answer carries its source.")
+theme.hero("Ctrl-F", "Questions over If Industrial policy documents. Every answer carries its source.")
 
 if not records:
     st.error("No extracted records yet. Run the pipeline first:  `uv run python -m src.ctrlf.extract`")

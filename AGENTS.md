@@ -62,11 +62,13 @@ deferred in writing rather than resolving it now.
   their extracted text. A blanket add put a customer-internal file on the public remote once.
 - **OCR runs words together.** Any pattern matched against document text must also be matched
   against a de-spaced copy. Word boundaries have silently hidden real evidence twice.
+- **Nothing loads from outside the machine, including the look.** Fonts are embedded from
+  `assets/fonts/`, never linked from a CDN, and Streamlit's usage statistics stay off.
 
 ## Out of scope today
 
-Scaling to 200 million documents. Authentication. Deployment. Visual polish. Record these as
-deferred decisions; do not build them.
+Scaling to 200 million documents. Authentication. Deployment. Record these as deferred
+decisions; do not build them.
 
 ## Deliverables due 18:00
 

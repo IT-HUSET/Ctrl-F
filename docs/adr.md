@@ -67,6 +67,14 @@ The two produce numbers that are not comparable: one counts term hits, the other
 similarity. Combining them by rank rather than value avoids inventing a scale, and takes about ten
 lines. A page found by both rises to the top, which is the behaviour we want.
 
+**10. The visual theme is CSS injected by the app, with its fonts embedded rather than served.**
+The look is Norwegian black metal kept legible: monochrome, a generated treeline and moon behind the
+content, blackletter only for the logo and headings, typewriter for evidence quotes, and no occult or
+runic symbols because this is shown to a customer. A font CDN was ruled out by the local-only rule.
+We first served the fonts through Streamlit's static file route, which answered the font URL with a
+200 carrying the app's own HTML page, so both faces silently fell back to serif. The fonts are now
+embedded in the stylesheet as data URIs, which needs no route and no request.
+
 ## Known weaknesses
 
 Figures for questions two and three are only as good as the OCR of a number, and a misread digit

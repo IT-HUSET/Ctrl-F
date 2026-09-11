@@ -88,3 +88,14 @@ numbers.
 policy that shares none of those words, proving the match is on meaning rather than wording.
 Keyword mode on the same query must not return it. The index must build in under two minutes and
 be reused on subsequent runs rather than rebuilt.
+
+## Increment 8 — Visual theme (added during the build)
+
+A Norwegian black metal look that stays legible: monochrome palette, sharp edges, a generated spruce
+treeline and pale moon behind the content, blackletter for the logo and headings, typewriter for
+evidence quotes. Fonts are OFL-licensed and embedded into the stylesheet.
+
+**Test scenario.** In a headless browser the logo's computed font is UnifrakturMaguntia and
+`document.fonts.check` confirms it loaded, rather than a serif fallback that looks almost right. The
+browser makes no request to any host other than the app itself, and Streamlit prints no usage
+statistics notice when started through `run.ps1`.

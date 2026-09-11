@@ -147,3 +147,24 @@ honestly throughout; the retrieval was what lied.
 1.2 GB and the Tesseract experience earlier in the day had already shown what an unattended download
 can cost. We pulled the smaller English-centric model in parallel and made the code use whichever
 was installed. The larger one arrived, so the hedge cost 274 MB and bought certainty.
+
+## Found while restyling, before the demo
+
+**The documented one-command run was broken on the remote.** An earlier patch script wrote the run
+command inside a Python string, where backslash-r is an escape sequence. It became a carriage
+return, so both the README and `CLAUDE.md` showed a lone dot followed by `un.ps1`. Anyone copying
+the command from the README would have failed the deliverable that says runnable with one command.
+Found by reading file bytes, and repaired with a script built from byte values so no escape sequence
+could reproduce it.
+*Lesson: keep Windows paths out of escape-processing strings, and check committed docs by bytes.*
+
+**The one-command run was quietly phoning home.** Our own Streamlit log printed "Collecting usage
+statistics". Every manual test had passed a flag to switch that off, but `run.ps1` did not, so the
+real demo path broke the promise that nothing leaves the machine. The switch now lives in
+`.streamlit/config.toml`, where every launch picks it up.
+
+**A 200 is not proof you got the file.** The first theme loaded its fonts through Streamlit's static
+file route, and a check of the font URL returned 200. The page still rendered in plain serif. The
+headers showed why: the 200 carried `text/html` and 7459 bytes, the app's own page, not a font. The
+fonts are now embedded in the stylesheet. It is the lesson the empty-text PDFs taught this
+afternoon: verify the content, not the status.

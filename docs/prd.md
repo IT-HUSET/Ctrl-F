@@ -58,11 +58,12 @@ the answer came from with its page number. No row appears without that evidence.
 
 ## Out of scope today
 
-Scaling beyond the sample corpus. Authentication. Deployment. Formats other than PDF. Visual polish.
+Scaling beyond the sample corpus. Authentication. Deployment. Formats other than PDF.
 
-Free-text search and then semantic search were both moved into scope during the build, and this
-document was updated each time rather than leaving the demo showing something the PRD called out
-of scope.
+Free-text search, semantic search and a visual theme were each requested during the build and moved
+into scope, and this document was updated each time rather than leaving the demo showing something
+the PRD called out of scope. The theme is a Norwegian black metal look, kept legible for a customer
+audience, and like everything else it makes no network request.
 
 ## Known risks
 

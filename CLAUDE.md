@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Overriding constraint: functional prototype today
+
+Time is very limited. The immediate goal is a working prototype today, not a complete system. This constraint outranks the workflow below wherever the two pull in different directions.
+
+- Prefer the shortest path to something demonstrable end to end over completeness, polish, or scale. The 200-million-document target is the eventual goal, not today's; prototype against a small sample corpus.
+- Run the spec-driven hierarchy compressed: a thin plan and a thin spec agreed in conversation, not as separate documents.
+- Keep the interview inside the day's budget. Ask the questions whose answers change what gets built today, and record the rest as deferred instead of resolving them now.
+- Write down shortcuts and deferred decisions as you make them, so they can be revisited after the prototype.
+
 ## Current state
 
 This repository is at the pre-implementation stage. It contains no source code, build system, package manifest, or tests yet. The only substantive content is the product brief in `docs/prd.md`.

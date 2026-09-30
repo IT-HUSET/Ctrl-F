@@ -1,30 +1,33 @@
-# Norwegian black metal, kept legible. The CSS layer, including the embedded
-# fonts, lives in src/ctrlf/theme.py.
+# Evergreen, the default theme. Keep in step with EVERGREEN in src/ctrlf/theme.py, which
+# also holds the Black metal alternative and the CSS layer for both.
 
 [browser]
 # Streamlit collects usage statistics by default, which is a network call.
 # The prototype promises that nothing leaves the machine at run time.
 gatherUsageStats = false
 
+[server]
+# The first-run email prompt blocks startup until someone types into the terminal.
+showEmailPrompt = false
+
 [client]
 toolbarMode = "minimal"
 
 [theme]
-base = "dark"
-primaryColor = "#e6e1d7"
-backgroundColor = "#050505"
-secondaryBackgroundColor = "#111111"
-textColor = "#d8d3c9"
-linkColor = "#9fb4c7"
-borderColor = "#262626"
+base = "light"
+primaryColor = "#1d6b57"
+backgroundColor = "#f5f7f3"
+secondaryBackgroundColor = "#e8efea"
+textColor = "#17312b"
+linkColor = "#24477a"
+borderColor = "#c9d6ce"
 showWidgetBorder = true
-baseRadius = "none"
+baseRadius = "medium"
 font = "sans-serif"
-# PirataOne is defined by an embedded @font-face in src/ctrlf/theme.py.
-headingFont = "PirataOne, serif"
-headingFontWeights = 400
-codeFont = "'Courier New', monospace"
+headingFont = "sans-serif"
+headingFontWeights = 700
+codeFont = "monospace"
 
 [theme.sidebar]
-backgroundColor = "#000000"
-secondaryBackgroundColor = "#0c0c0c"
+backgroundColor = "#eaf1ec"
+secondaryBackgroundColor = "#ffffff"

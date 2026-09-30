@@ -168,3 +168,16 @@ file route, and a check of the font URL returned 200. The page still rendered in
 headers showed why: the 200 carried `text/html` and 7459 bytes, the app's own page, not a font. The
 fonts are now embedded in the stylesheet. It is the lesson the empty-text PDFs taught this
 afternoon: verify the content, not the status.
+
+**A second theme meant fighting Streamlit's config.** Streamlit sets its widget colours from
+`config.toml` once per process, with no per-session theme API. The switch works by setting those
+options and rerunning, because the browser receives them at the start of every run. It is
+process-wide, so it suits one presenter and would misbehave for several concurrent users.
+Headless Edge's one-shot `--screenshot` only captured the loading skeleton; driving the installed
+Edge through Playwright (`channel="msedge"`, no browser download) gave real screenshots.
+*Lesson: check that a UI change works in a real browser; a single capture only shows first paint.*
+
+**The one-command run could hang on a fresh machine.** Streamlit's first start asks for an email
+address in the terminal and waits for an answer. Our machines had answered it long ago, so nobody
+saw it until the app was launched from a shell with no input attached. `showEmailPrompt = false` in
+`.streamlit/config.toml` removes it.

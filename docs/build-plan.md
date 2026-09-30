@@ -91,6 +91,14 @@ be reused on subsequent runs rather than rebuilt.
 
 ## Increment 8 — Visual theme (added during the build)
 
+Revised before the demo: Evergreen, an insurance, statistics and sustainability look, is now the
+default, and the black metal theme below is selectable under Appearance in the sidebar.
+**Test scenario.** Open the app, switch to Black metal and back: the page background and logo
+font change each time, the URL carries `?theme=`, and the browser contacts no host but the app.
+Checked in headless Edge driven by Playwright.
+
+The original theme:
+
 A Norwegian black metal look that stays legible: monochrome palette, sharp edges, a generated spruce
 treeline and pale moon behind the content, blackletter for the logo and headings, typewriter for
 evidence quotes. Fonts are OFL-licensed and embedded into the stylesheet.

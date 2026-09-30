@@ -62,8 +62,8 @@ Scaling beyond the sample corpus. Authentication. Deployment. Formats other than
 
 Free-text search, semantic search and a visual theme were each requested during the build and moved
 into scope, and this document was updated each time rather than leaving the demo showing something
-the PRD called out of scope. The theme is a Norwegian black metal look, kept legible for a customer
-audience, and like everything else it makes no network request.
+the PRD called out of scope. The default theme, Evergreen, is a sober insurance and statistics look
+in forest green and navy; the Norwegian black metal look stays selectable, and like everything else it makes no network request.
 
 ## Known risks
 

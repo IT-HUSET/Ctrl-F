@@ -55,7 +55,8 @@ def load():
 
 
 records = load()
-theme.hero("Ctrl-F", "Questions over If Industrial policy documents. Every answer carries its source.")
+theme.hero("Ctrl-F", "Questions over If Industrial policy documents. Every answer carries its source.",
+           kicker="Policy portfolio intelligence")
 
 if not records:
     st.error("No extracted records yet. Run the pipeline first:  `uv run python -m src.ctrlf.extract`")
@@ -71,6 +72,8 @@ with st.sidebar:
         "The source PDFs have no text layer — their text is flattened to vector "
         "outlines — so almost every page is recovered by OCR before anything else happens."
     )
+    st.divider()
+    theme.picker()
 
 FREE = "__free__"
 LABELS = {k: v["title"] for k, v in QUESTIONS.items()}

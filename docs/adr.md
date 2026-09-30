@@ -68,6 +68,11 @@ similarity. Combining them by rank rather than value avoids inventing a scale, a
 lines. A page found by both rises to the top, which is the behaviour we want.
 
 **10. The visual theme is CSS injected by the app, with its fonts embedded rather than served.**
+Two themes, picked under Appearance in the sidebar and carried in the URL (`?theme=blackmetal`).
+The default, Evergreen, is the demo look: insurance-sector sober, graph-paper grid, KPI tiles with
+tabular figures, forest green with navy, and a bar strip shading from navy into green. Streamlit's
+base theme is process-wide config, so switching sets those options and reruns; acceptable for one
+presenter, wrong for many users. The original build-day look is kept as the second theme:
 The look is Norwegian black metal kept legible: monochrome, a generated treeline and moon behind the
 content, blackletter only for the logo and headings, typewriter for evidence quotes, and no occult or
 runic symbols because this is shown to a customer. A font CDN was ruled out by the local-only rule.

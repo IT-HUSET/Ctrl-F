@@ -82,5 +82,5 @@ needs no system binary.
 | `docs/Use cases.docx` | The customer's three questions and what a bad answer looks like |
 | `AGENTS.md` | Rules for AI agents working in this repository |
 | `CLAUDE.md` | Claude Code guidance: event terms, constraints, workflow |
-| `.streamlit/config.toml` | Theme, and the switch that keeps Streamlit's usage statistics off |
+| `.streamlit/config.toml` | Default (Evergreen) theme, and the switch that keeps Streamlit's usage statistics off |
 | `assets/fonts/` | Bundled OFL blackletter fonts, embedded into the page rather than fetched |

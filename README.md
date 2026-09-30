@@ -82,7 +82,10 @@ channel cleared for customer data, never through git.
   index, which takes several minutes and more for the model steps. It holds the documents' full
   text and page images, so it is as sensitive as `data/`.
 
-Then run `.\run.ps1` as above.
+For the demo, both folders are packed as `ctrlf-data-and-cache.zip` in the case If folder on our
+Google Drive. Unzip it into the cloned repository, so `data\` and `cache\` sit next to `run.ps1`,
+then run `.\run.ps1` as above. It opens the app straight away, as long as the models are pulled.
+The zip is a snapshot of the demo day; after a rebuild, replace it.
 
 ## Constraints
 

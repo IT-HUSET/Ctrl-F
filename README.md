@@ -62,9 +62,27 @@ ollama pull qwen2.5:7b-instruct   # reading and answering
 ollama pull bge-m3                # multilingual embeddings for semantic search
 ```
 
-Put the source PDFs in `data/`. Nothing else is installed outside the Python environment, and
-nothing leaves the machine at run time. OCR runs through RapidOCR, which ships its own models and
-needs no system binary.
+`nomic-embed-text` (274 MB) is an optional fallback that semantic search uses when `bge-m3` is
+missing. The 7B model wants about 8 GB of free memory. OCR runs through RapidOCR, which ships its
+own models and needs no system binary. Setup needs the internet once, for uv and the model pulls;
+after that nothing leaves the machine at run time. `run.ps1` is PowerShell, so as written this runs
+on Windows.
+
+### Moving it to another machine
+
+A clone is not enough. `data/` and `cache/` are gitignored on purpose, because they hold customer
+policy documents and their full text, and this repository is public. Copy them by hand, over a
+channel cleared for customer data, never through git.
+
+- **`data/` (about 56 MB), required.** Keep the subfolders exactly as they are (`Offshore
+  Projects`, `Layers`, `excess auto liability`, `Projects`). The scoring reads those folder names
+  as the reference set, so flattening them breaks precision and recall.
+- **`cache/` (about 65 MB), optional.** With it, `.\run.ps1` opens the app straight away. Without
+  it, the first run redoes OCR over every page, extraction with the local model and the semantic
+  index, which takes several minutes and more for the model steps. It holds the documents' full
+  text and page images, so it is as sensitive as `data/`.
+
+Then run `.\run.ps1` as above.
 
 ## Constraints
 

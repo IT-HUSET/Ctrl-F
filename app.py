@@ -158,7 +158,7 @@ if key == FREE:
                 img = IMAGES / h["image"]
                 if img.exists():
                     with st.popover(f"Show page {h['page']}"):
-                        st.image(str(img), use_container_width=True)
+                        st.image(str(img), width="stretch")
         if not hits:
             st.warning("Nothing matched. Try a shorter phrase — OCR sometimes runs words together.")
     st.stop()
@@ -222,7 +222,7 @@ with left:
                 img = IMAGES / ev["image"]
                 if img.exists():
                     with st.popover(f"Show page {ev['page']}"):
-                        st.image(str(img), use_container_width=True)
+                        st.image(str(img), width="stretch")
             st.caption(f"Source file: `{r['doc_id']}` · {r['n_pages']} pages")
 
     if key == "layer" and matches:

@@ -166,7 +166,9 @@ if key == FREE:
 q = QUESTIONS[key]
 st.info(f"**Customer's question:** {q['customer_wording']}")
 
-matches = [r for r in records if r["findings"].get(key, {}).get("applies")]
+by_id = {r["doc_id"]: r for r in records}
+source = scoring.answers(records, key)
+matches = [by_id[d] for d in source]
 score = scoring.score(records, key)
 
 left, right = st.columns([3, 1])
@@ -184,6 +186,9 @@ with right:
         st.info(f"{len(score['verified_correct'])} scored as wrong, verified correct by hand")
         for d, why in score["verified_correct"].items():
             st.caption(f"· {why}")
+    if score["via_supporting"]:
+        st.info(f"{len(score['via_supporting'])} answered from a related document, "
+                "not the policy itself")
     if score["false_negatives"]:
         st.error(f"Missed: {len(score['false_negatives'])}")
         for d in score["false_negatives"]:
@@ -203,6 +208,10 @@ with left:
         st.write("No policies matched.")
     for r in matches:
         f = r["findings"][key]
+        via = by_id.get(source[r["doc_id"]])
+        if via:
+            # Cover stated only in a related document, not the policy itself.
+            f = via["findings"][key]
         # These documents are partially redacted: the policyholder name is behind a
         # black box, so the model often returns a customer number. Lead with the
         # policy number, which is reliably present.
@@ -211,6 +220,10 @@ with left:
         period = r.get("period") or "period not read"
         header = f"**Policy {pol}** · {period}" + (f" · {insured}" if insured else "")
         with st.expander(header, expanded=len(matches) <= 3):
+            if via:
+                st.caption(
+                    f"Not stated in the policy document. Found in the related document "
+                    f"`{via['doc_id']}`, linked because it names this policy's insured.")
             cols = [c for c in q["columns"] if f.get(c)]
             if cols:
                 st.write(" · ".join(f"**{c.replace('_', ' ')}:** {f[c]}" for c in cols))

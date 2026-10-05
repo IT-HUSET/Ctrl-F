@@ -30,18 +30,23 @@ readable in the first place.
 
 ## Status
 
-Working prototype, built in a one-day Caseathon over a 19-document sample corpus.
+Working prototype, built in a one-day Caseathon over a 19-document sample corpus, plus one supporting clause image the customer supplied
+afterwards.
 
 | Question | Precision | Recall |
 | --- | --- | --- |
 | Offshore | 0.83 | 1.00 |
-| Excess auto, US | 1.00 | 0.50 |
+| Excess auto, US | 1.00 | 0.83 |
 | Layer | 0.80 | 1.00 |
 
-Both results the score counts as wrong were read by hand and are correct: they match a question
-they were not filed under, because the folders are a search set rather than an answer key. There
-are no unexplained false positives. Scaling, authentication and deployment are deliberately
-deferred.
+The offshore false positive was read by hand and is correct: it matches a question it was not
+filed under, because the folders are a search set rather than an answer key. The layer false
+positive is a real error. `temp.lh.policy.2022.06.22` has one New Zealand extension worded "MNZD10 in excess of
+MNZD20", but the customer defines a layer as a policy that covers only a band of losses, and this
+policy covers from the ground up. Two excess-auto answers for the policy in `temp.lh.policy.2022.06.08` (two copies)
+come from a related clause (`Excess automobile liability.png`), not the policy itself. The customer
+confirmed the cover cannot be read from the policy alone. Scaling, authentication and deployment
+are deliberately deferred.
 
 ## Running it
 

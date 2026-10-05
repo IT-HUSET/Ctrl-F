@@ -40,6 +40,8 @@ EXCESS_AUTO_HINTS = [
     r"motor\s*liability", r"motor\s*driven\s*vehicles", r"fleet\s*of\s*vehicles",
     r"attachment\s*point", r"underlying\s*(policy|limit|insurance)",
     r"excess\s*of\s*loss", r"\bumbrella\b",
+    # From the supporting excess automobile clause, which says none of the above.
+    r"motor\s*vehicles", r"primary\s*(local\s*)?motor", r"excess\s*cover(age)?",
 ]
 # No word boundary on "layer": OCR yields "Captivelayer" and "excesspolicy",
 # which \blayer\b silently fails to match. That cost a real document.
@@ -86,8 +88,15 @@ VERIFY_SCHEMA = {
         "currency": {"type": "string"},
         "reason": {"type": "string"},
     },
-    "required": ["applies", "quote", "reason"],
+    "required": ["applies", "page", "quote", "reason"],
 }
+# Optional figures came back empty on every record, even where the quote spells
+# them out ("Layer of EUR400M in excess of ... EUR400M"). Required fields make the
+# model fill them in, or say "not stated". Only for the questions that ask for
+# figures: required on offshore, the model stuffed them with excerpt text.
+FIGURES_SCHEMA = dict(VERIFY_SCHEMA, required=VERIFY_SCHEMA["required"] + [
+    "attachment_point", "limit", "currency"])
+FIGURE_QUESTIONS = {"excess_auto_us", "layer"}
 HEADER_SCHEMA = {
     "type": "object",
     "properties": {
@@ -108,15 +117,24 @@ QUESTIONS = {
     ),
     "excess_auto_us": (
         "Do these excerpts show EXCESS AUTO or automobile or motor liability cover, sitting excess "
-        "of an underlying policy, applying in the UNITED STATES? If so give the attachment point, "
-        "meaning where this cover starts, and the limit, with currency. Answer applies=false if the "
-        "cover is not auto liability, or is not excess, or has no US scope."
+        "of an underlying policy, applying in the UNITED STATES? Cover that applies in the US only "
+        "under conditions, for example to employees travelling there, still counts. If so give the "
+        "attachment point for the US, meaning the amount this cover starts above, and the limit of "
+        "this cover, each as written with its amount. Write 'not stated' for a figure the excerpts "
+        "do not give. Answer applies=false if the cover is not auto liability, or is not excess, or "
+        "has no US scope."
     ),
     "layer": (
+        # The customer's full definition of a layer (a band of losses; not a deductible,
+        # not one extension of a ground-up policy) was tried here and dropped layer
+        # recall from 1.00 to 0.25: the 7B model answered false on quotes its own
+        # reason called layers. This shorter wording scored best on the six deciding
+        # documents. It still accepts the New Zealand extension in `temp.lh.policy.2022.06.22`.
         "Do these excerpts show that this policy insures a LAYER of a risk: cover sitting excess of "
         "an underlying amount rather than from the ground up? If so give the excess or attachment "
         "point and the limit of this layer, with currency. A sublimit inside a primary policy is "
-        "NOT a layer."
+        "NOT a layer. In 'X xs Y' or 'X in excess of Y', Y is the attachment point and X is the "
+        "limit."
     ),
 }
 
@@ -136,6 +154,54 @@ def load_pages():
     return docs
 
 
+POLICY_NO = re.compile(r"LP\d{6,}")
+
+
+def deductible_only(quote):
+    """A layer quote that is really about a deductible.
+
+    The customer separated the two explicitly: a deductible is what the insured
+    retains, a layer is the band a policy covers. The model accepted "Limits in
+    excess of deductible" as a layer even when its own reason said otherwise, and
+    no prompt wording held that line, so it is enforced here.
+    """
+    return bool(re.search(r"deductible", quote, re.I)) and \
+        not re.search(r"layer|xs|underlying\s*primary", quote, re.I)
+
+
+def _key(text):
+    return re.sub(r"[^a-z0-9]", "", text.lower())
+
+
+def _linkable(insured):
+    """An insured name specific enough to link on. Redaction leaves the header
+    model returning labels ("INSURED COMPANIES") or the insurer's own name, and
+    those occur in every clause: linking on them credited unrelated policies."""
+    k = _key(insured)
+    return len(k) >= 5 and not any(w in k for w in ("insured", "notspecified", "notprovided", "policyholder")) \
+        and not (k.startswith("if") and any(w in k for w in ("insurance", "skade")))
+
+
+def link_supporting(records, docs):
+    """Attach supporting documents to the policies they belong to.
+
+    A supporting document carries no policy number: a clause, a schedule, a
+    screenshot of an endorsement. The customer confirmed that some cover, such as
+    one policy's US excess auto, is stated only in such documents and cannot be read
+    from the policy itself. A supporting document is linked to every policy whose
+    insured it names. Content only; folder names are never read.
+    """
+    policies = [r for r in records if r.get("kind") != "supporting"]
+    for sup in records:
+        if sup.get("kind") != "supporting":
+            continue
+        text = _key(" ".join(p["text"] for p in docs.get(sup["doc_id"], [])))
+        sup["supports"] = [r["doc_id"] for r in policies
+                           if _linkable(r.get("insured", "")) and _key(r["insured"]) in text]
+    for r in policies:
+        r["supported_by"] = [s["doc_id"] for s in records if r["doc_id"] in s.get("supports", [])]
+
+
 def extract_doc(doc_id, pages):
     pages = sorted(pages, key=lambda p: p["page"])
     by_page = {p["page"]: p for p in pages}
@@ -150,8 +216,10 @@ def extract_doc(doc_id, pages):
     except Exception as e:
         h = {"insured": "", "policy_no": "", "period": "", "error": str(e)[:100]}
 
+    has_policy_no = any(POLICY_NO.search(_norm(p["text"])) for p in pages)
     rec = {
         "doc_id": doc_id,
+        "kind": "policy" if has_policy_no else "supporting",
         "n_pages": pages[0]["n_pages"],
         "insured": h.get("insured", ""),
         "policy_no": h.get("policy_no", ""),
@@ -177,18 +245,20 @@ def extract_doc(doc_id, pages):
             try:
                 v = llm.ask_json(
                     question + "\n\nExcerpts from one policy document:\n\n" + block,
-                    VERIFY_SCHEMA, system=SYSTEM)
+                    FIGURES_SCHEMA if key in FIGURE_QUESTIONS else VERIFY_SCHEMA,
+                    system=SYSTEM)
             except Exception:
                 v = {}
-            blocked = (key == "excess_auto_us" and not us_doc)
+            blocked = (key == "excess_auto_us" and not us_doc) or \
+                (key == "layer" and deductible_only(v.get("quote") or found[0][1]))
             if v.get("applies") and not blocked:
                 page = v.get("page") or found[0][0]
                 if page not in by_page:
                     page = found[0][0]
                 finding["applies"] = True
-                finding["attachment_point"] = v.get("attachment_point", "")
-                finding["limit"] = v.get("limit", "")
-                finding["currency"] = v.get("currency", "")
+                for f in ("attachment_point", "limit", "currency") if key in FIGURE_QUESTIONS else ():
+                    val = (v.get(f) or "").strip()
+                    finding[f] = "" if val.lower().startswith(("not ", "n/a", "none")) else val
                 finding["evidence"] = [{
                     "page": page,
                     "quote": (v.get("quote") or found[0][1])[:400],
@@ -228,6 +298,11 @@ def main():
         print("[%d/%d] %s (%dp) %.0fs" % (i, len(todo), doc_id, len(pages), time.time() - t),
               flush=True)
         RECORDS.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+    link_supporting(out, complete)
+    RECORDS.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+    for r in out:
+        if r["kind"] == "supporting":
+            print("supporting document %s -> %s" % (r["doc_id"], r["supports"] or "no policy"))
     print("\n%d records -> %s in %.0fs" % (len(out), RECORDS, time.time() - t0))
 
 

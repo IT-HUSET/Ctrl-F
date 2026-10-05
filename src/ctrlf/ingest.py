@@ -1,4 +1,4 @@
-"""Turn the PDF corpus into searchable page text.
+"""Turn the corpus (PDFs, plus scans and screenshots) into searchable page text.
 
 The documents have no text layer: their glyphs are flattened to vector outlines,
 so 208 of 226 pages yield zero characters from any PDF parser. Those pages are
@@ -31,7 +31,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import pymupdf
 
-from .config import DATA, PAGES, IMAGES, OCR_DPI
+from .config import DATA, PAGES, IMAGES, OCR_DPI, corpus_files
 
 MIN_NATIVE_CHARS = 200  # below this, treat the page as having no text layer
 _ocr = None
@@ -70,18 +70,29 @@ def do_page(task: tuple[str, str, int, int]) -> dict:
     }
 
 
-def build_tasks() -> list[tuple[str, str, int, int]]:
+def done_pages() -> list[dict]:
+    """Pages of documents already read in full. Adding one file to the corpus
+    should not cost a full re-OCR; delete cache/ (run.ps1 -Rebuild) to redo all."""
+    if not PAGES.exists():
+        return []
+    by_doc: dict[str, list[dict]] = {}
+    with PAGES.open(encoding="utf-8") as fh:
+        for line in fh:
+            r = json.loads(line)
+            by_doc.setdefault(r["doc_id"], []).append(r)
+    return [r for ps in by_doc.values() if len(ps) == ps[0]["n_pages"] for r in ps]
+
+
+def build_tasks(skip: set[str] = frozenset()) -> list[tuple[str, str, int, int]]:
     """Page tasks, shortest documents first.
 
     One document holds 85 of the 226 pages. Finishing the small ones first means
     an interrupted run still covers most documents, instead of most of one.
     """
-    docs, seen = [], {}
-    for pdf in sorted(DATA.rglob("*.pdf")):
-        stem = pdf.stem.replace(" ", "_")
-        seen[stem] = seen.get(stem, 0) + 1
-        doc_id = stem if seen[stem] == 1 else f"{stem}__{seen[stem]}"
-        docs.append((pymupdf.open(pdf).page_count, doc_id, str(pdf)))
+    docs = []
+    for doc_id, path in corpus_files():
+        if doc_id not in skip:
+            docs.append((pymupdf.open(path).page_count, doc_id, str(path)))
     docs.sort()
     tasks = []
     for n, doc_id, path in docs:
@@ -92,10 +103,13 @@ def build_tasks() -> list[tuple[str, str, int, int]]:
 def main():
     IMAGES.mkdir(parents=True, exist_ok=True)
     PAGES.parent.mkdir(parents=True, exist_ok=True)
-    tasks = build_tasks()
-    if not tasks:
-        sys.exit(f"No PDFs under {DATA}")
-    workers = min(int(os.environ.get("CTRLF_WORKERS", "6")), len(tasks))
+    kept = done_pages()
+    tasks = build_tasks({r["doc_id"] for r in kept})
+    if not tasks and not kept:
+        sys.exit(f"No documents under {DATA}")
+    if kept:
+        print(f"keeping {len(kept)} pages already read", flush=True)
+    workers = max(1, min(int(os.environ.get("CTRLF_WORKERS", "6")), len(tasks)))
     print(f"{len(tasks)} pages across {len({t[0] for t in tasks})} documents, "
           f"{workers} workers", flush=True)
 
@@ -103,6 +117,8 @@ def main():
     done = 0
     with PAGES.open("w", encoding="utf-8") as out, \
             ProcessPoolExecutor(max_workers=workers) as pool:
+        for rec in kept:
+            out.write(json.dumps(rec, ensure_ascii=False) + "\n")
         for rec in pool.map(do_page, tasks, chunksize=1):
             out.write(json.dumps(rec, ensure_ascii=False) + "\n")
             out.flush()

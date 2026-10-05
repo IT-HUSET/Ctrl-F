@@ -131,6 +131,48 @@ by how much without the customer confirming the answer key.
 We also learned the vocabulary matters more than the model: the phrase "excess auto" appears nowhere
 in the corpus. These policies say "Use of Motor Driven Vehicles - Fleet of Vehicles".
 
+## After the customer answered our questions
+
+The customer answered four questions. Each one changed the prototype.
+
+**A result we had hand-verified was wrong.** We had accepted "cover is MNZD10 in excess of MNZD20"
+in `temp.lh.policy.2022.06.22` as a layer. The customer's definition is a policy that covers only a band of
+losses. That line is one New Zealand extension of a policy covering from the ground up, so it is
+not a layer. It is now scored as a false positive, not excused.
+*Lesson: a hand check confirms the wording, not the definition. Ask for the definition first.*
+
+**Teaching the model the definition made it worse.** With the full definition in the prompt, layer
+recall fell from 1.00 to 0.25. The 7B model answered "no" on quotes its own reason called layers.
+An enum-classification variant did no better. The original wording plus one sentence ("in X xs Y,
+Y is the attachment point") won, tested on the six documents that decide the score. Two new false
+positives it let through ("Limits in excess of deductible") are now rejected by a rule in code.
+The customer's line between deductible and layer was enforced deterministically, because no prompt
+held it. The NZ line still gets through. The snippet the model sees is too short to show that the
+amount belongs to one country.
+
+**Excess point and limit had never been extracted.** They were optional fields in the response
+schema, and the model left them empty on every record, even where the quote spelled them out.
+Making them required filled them in, for example 150M EUR xs 500M EUR. Required on every question,
+the model filled offshore's fields with excerpt text. They are now required only where the
+question asks for figures. One remains wrong: `temp.lh.policy.2022.06.22`'s North America excess point MUSD 1
+lands in the limit field. A prompt fix for it broke two other documents and was reverted.
+
+**The customer confirmed the folder proxy problem, and supplied the missing evidence.** The US
+excess auto cover of `temp.lh.policy.2022.06.08` exists, but only in related documents. A screenshot of that
+clause was added to the corpus. A document without an `LP` policy number is now treated as
+supporting evidence and linked to any policy whose insured it names. The first linking pass matched
+redaction labels like "INSURED COMPANIES" and credited an unrelated policy. That would have shown
+excess-auto recall as 1.00 instead of 0.83. Caught by printing the links, not the score.
+
+Ingest now reads images as well as PDFs, and only OCRs files it has not seen. Adding the image cost
+15 seconds instead of a full re-OCR.
+
+| Question | Precision | Recall | Change |
+| --- | --- | --- | --- |
+| Offshore | 0.83 | 1.00 | unchanged |
+| Excess auto, US | 1.00 | 0.83 | was 0.50; both copies of `2022.06.08` answered from the supporting clause |
+| Layer | 0.80 | 1.00 | same numbers, but the false positive is now counted as an error, with figures |
+
 ## Late additions: free-text and semantic search
 
 Both were requested after the PRD was agreed. Each time, the PRD was updated in the same change,

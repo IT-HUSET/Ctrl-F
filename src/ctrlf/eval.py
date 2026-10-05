@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from .config import DATA, RECORDS
+from .config import RECORDS, corpus_files
 
 FOLDER_LABEL = {
     "offshore projects": "offshore",
@@ -23,13 +23,32 @@ FOLDER_LABEL = {
 def truth() -> dict[str, set[str]]:
     """doc_id -> set of labels, derived from folder names."""
     out: dict[str, set[str]] = {}
-    seen: dict[str, int] = {}
-    for pdf in sorted(DATA.rglob("*.pdf")):
-        stem = pdf.stem.replace(" ", "_")
-        seen[stem] = seen.get(stem, 0) + 1
-        doc_id = stem if seen[stem] == 1 else f"{stem}__{seen[stem]}"
-        label = FOLDER_LABEL.get(pdf.parent.name.lower())
+    for doc_id, path in corpus_files():
+        label = FOLDER_LABEL.get(path.parent.name.lower())
         out[doc_id] = {label} if label else set()
+    return out
+
+
+def answers(records: list[dict], key: str) -> dict[str, str]:
+    """policy doc_id -> where its yes came from: "policy" or a supporting doc_id.
+
+    Supporting documents are not scored on their own; their evidence counts for
+    the policies they were linked to. The customer confirmed one policy's US excess
+    auto cover is stated only outside the policy document (temp.lh.policy.2022.06.08), so a
+    policy may only be answerable through one.
+    """
+    by_id = {r["doc_id"]: r for r in records}
+    out = {}
+    for r in records:
+        if r.get("kind") == "supporting":
+            continue
+        if r["findings"].get(key, {}).get("applies"):
+            out[r["doc_id"]] = "policy"
+            continue
+        for s in r.get("supported_by", []):
+            if by_id.get(s, {}).get("findings", {}).get(key, {}).get("applies"):
+                out[r["doc_id"]] = s
+                break
     return out
 
 
@@ -42,17 +61,19 @@ def truth() -> dict[str, set[str]]:
 VERIFIED_CORRECT = {
     ("offshore", "temp.lh.policy.2024.02.21"):
         "for off-shore GBP 5,000,000 - genuine offshore cover, filed under excess auto",
-    ("layer", "temp.lh.policy.2022.06.22"):
-        "cover is MNZD10 in excess of MNZD20 - a layer, filed under excess auto",
+    # Removed: ("layer", "temp.lh.policy.2022.06.22"), "cover is MNZD10 in excess of
+    # MNZD20". The customer defined a layer as a policy covering only a band of
+    # losses. That line is one New Zealand extension of a ground-up master policy,
+    # so it is not a layer, and the hand check that accepted it was wrong.
 }
 
 
 def score(records: list[dict], key: str) -> dict:
-    gt = truth()
+    supporting = {r["doc_id"] for r in records if r.get("kind") == "supporting"}
+    gt = {d: labels for d, labels in truth().items() if d not in supporting}
     expected = {d for d, labels in gt.items() if key in labels}
-    predicted = {r["doc_id"] for r in records if r["findings"].get(key, {}).get("applies")}
-    known = set(gt)
-    predicted &= known
+    source = answers(records, key)
+    predicted = set(source) & set(gt)
     tp = len(expected & predicted)
     fp = len(predicted - expected)
     fn = len(expected - predicted)
@@ -68,6 +89,7 @@ def score(records: list[dict], key: str) -> dict:
         "verified_correct": {d: VERIFIED_CORRECT[(key, d)] for d in verified},
         "unexplained_false_positives": [d for d in raw_fp if d not in verified],
         "false_negatives": sorted(expected - predicted),
+        "via_supporting": {d: source[d] for d in sorted(predicted) if source[d] != "policy"},
         "tp": tp, "fp": fp, "fn": fn,
         "precision": precision, "recall": recall, "f1": f1,
     }
@@ -86,6 +108,8 @@ def main():
             print(f"    ok  {d} - scored as FP, verified correct: {why}")
         for d in s["false_negatives"]:
             print(f"    FN  {d}")
+        for d, sup in s["via_supporting"].items():
+            print(f"    via {d} - answered from supporting document {sup}")
 
 
 if __name__ == "__main__":

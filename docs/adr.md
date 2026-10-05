@@ -4,7 +4,8 @@ One page. Written 2026-09-11 during the Caseathon build window, against `docs/pr
 
 ## Context
 
-Nineteen policy documents, 226 pages. Two facts drove almost every decision. The documents have
+Nineteen policy documents, 226 pages, plus one clause image the customer supplied after answering
+our questions. Two facts drove almost every decision. The documents have
 no text layer, because their glyphs are flattened to vector outlines, so nothing can be parsed
 out of them. And the corpus is small, so the usual assumption that you must search before you
 can answer does not hold today.
@@ -80,10 +81,33 @@ We first served the fonts through Streamlit's static file route, which answered 
 200 carrying the app's own HTML page, so both faces silently fell back to serif. The fonts are now
 embedded in the stylesheet as data URIs, which needs no route and no request.
 
+**11. A document without a policy number is supporting evidence, linked to policies by insured.**
+The customer confirmed that some cover is stated only outside the policy document. In this corpus,
+US excess auto for `temp.lh.policy.2022.06.08` appears only in a separate clause, which they
+supplied as an image. Ingest reads images through the same OCR path as PDFs. Extract marks any
+document with no `LP` number as supporting, using content only and never the folder. It links the
+document to every policy whose insured it names. Eval and the app then credit the policy and say
+the answer came from a related document. Linking ignores generic insured values such as
+"INSURED COMPANIES" and the insurer's own name, which redaction leaves behind. The first pass
+linked on those and credited an unrelated policy. At scale this becomes a link on policy-number
+family and client number, both of which master policies already list.
+
+**12. Rules the model will not hold are enforced in code.**
+The customer separates a layer (the band of losses a policy covers) from a deductible (what the
+insured retains). With that definition in the prompt, layer recall fell from 1.00 to 0.25. Without
+it, the model accepted "limits in excess of deductible" as a layer. The prompt stays short, and
+`deductible_only()` rejects a layer quote that mentions a deductible but no layer wording. The
+model proposes; code applies the customer's definitions where they can be stated as a rule.
+Attachment point and limit are required fields for the two questions that ask for figures. As
+optional fields, they came back empty on every record.
+
 ## Known weaknesses
 
 Figures for questions two and three are only as good as the OCR of a number, and a misread digit
-is a wrong answer by the customer's own definition. Scoring assumes folder membership equals
-truth, which is worth confirming before the number is quoted. Extraction quality rests on a 7B
+is a wrong answer by the customer's own definition. Scoring uses folder membership as truth. The
+customer confirmed the folders are a search set rather than an answer key, so the score is a proxy.
+The model sees short snippets, not whole pages. That is why it still accepts the New Zealand
+extension in `temp.lh.policy.2022.06.22` as a layer: the snippet does not show that the amount
+belongs to one country. Extraction quality rests on a 7B
 model reading OCR output, which is the main thing a larger model would improve. Semantic search is
 unscored: we have no labelled relevance judgements, so it is demonstrated rather than measured.

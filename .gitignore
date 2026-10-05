@@ -34,3 +34,6 @@ docs/Use cases.docx
 __pycache__/
 *.pyc
 .venv/
+
+# Data and cache bundles for the team Drive hold the real policy documents.
+*.zip
